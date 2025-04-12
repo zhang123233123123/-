@@ -6,6 +6,7 @@ import plotly.graph_objects as go
 import time
 from PIL import Image
 import base64
+import os
 
 # 设置页面
 st.set_page_config(
@@ -14,6 +15,15 @@ st.set_page_config(
     layout="wide",
     initial_sidebar_state="expanded"
 )
+
+# 加载并编码图像为base64
+def get_image_base64(image_path):
+    with open(image_path, "rb") as img_file:
+        return base64.b64encode(img_file.read()).decode()
+
+# 获取中南大学Logo的base64编码
+logo_path = "WechatIMG250.jpg"  # 本地图片路径
+logo_base64 = get_image_base64(logo_path)
 
 # 自定义CSS样式 - 升级高级设计
 st.markdown("""
@@ -245,8 +255,12 @@ st.markdown("""
     
     /* 学校Logo */
     .university-logo {
-        height: 60px;
+        height: 70px;
         margin-right: 20px;
+        border-radius: 8px;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        padding: 4px;
+        background-color: #fff;
     }
     
     /* 实验室标识 */
@@ -377,9 +391,9 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # 创建顶部标题区域
-st.markdown('''
+st.markdown(f'''
 <div class="header-container">
-    <img src="https://cms-storage.csu.edu.cn/__local/A/B5/B2/29EE7E20E4CB3FD238EA0CC23AE_A43BEEAC_1B7F4.jpg" class="university-logo" alt="中南大学校徽">
+    <img src="data:image/jpeg;base64,{logo_base64}" class="university-logo" alt="中南大学校徽" style="max-width: 70px; max-height: 70px; object-fit: contain;">
     <div>
         <h1 style="margin: 0;">🪨 智能岩爆风险评估系统</h1>
         <div style="display: flex; align-items: center;">
@@ -541,10 +555,10 @@ def create_parameter_impact_radar():
 # 侧边栏配置 - 现代设计
 with st.sidebar:
     # 添加学校标志
-    st.markdown('''
+    st.markdown(f'''
     <div style="text-align: center; margin-bottom: 20px;">
-        <img src="https://cms-storage.csu.edu.cn/__local/A/B5/B2/29EE7E20E4CB3FD238EA0CC23AE_A43BEEAC_1B7F4.jpg" 
-            style="height: 60px; margin-bottom: 10px;" alt="中南大学校徽">
+        <img src="data:image/jpeg;base64,{logo_base64}" 
+            style="height: 60px; width: 60px; object-fit: contain; margin-bottom: 10px; border-radius: 50%; border: 2px solid #1E40AF; padding: 3px; background-color: white;" alt="中南大学校徽">
         <p style="color: #1E40AF; font-weight: 600; margin: 5px 0;">中南大学可持续岩土实验室</p>
     </div>
     ''', unsafe_allow_html=True)
@@ -553,9 +567,11 @@ with st.sidebar:
     st.markdown('<div class="title-decoration"></div>', unsafe_allow_html=True)
     st.markdown('<p class="info-text">请配置岩石样本的关键参数:</p>', unsafe_allow_html=True)
     
-    # 添加一个现代化的岩石图像
-    rock_image_url = "https://www.researchgate.net/profile/Fidelis-Suorineni/publication/280302575/figure/fig2/AS:613966088060957@1523392573121/Examples-of-rock-burst-damage.png"
-    st.image(rock_image_url, use_column_width=True, caption="岩爆现场示例")
+    # 使用本地岩爆图片而不是远程URL
+    image = Image.open("WechatIMG250.jpg")
+    # 调整图片大小，避免过大
+    image_resized = image.resize((300, 300))
+    st.image(image_resized, use_column_width=True, caption="中南大学可持续岩土实验室")
     
     st.markdown('<div class="divider"></div>', unsafe_allow_html=True)
     
