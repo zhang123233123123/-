@@ -345,3 +345,76 @@ def predict_locally(input_data):
         }
         
         return result
+
+# 新增DeepSeek API功能
+def get_deepseek_advice(rock_type, prediction_text, sigma_theta, sigma_c, sigma_t, sigma_theta_c_ratio, sigma_c_t_ratio, wet):
+    """
+    根据岩爆预测结果调用DeepSeek API获取专业建议
+    """
+    try:
+        from openai import OpenAI
+        
+        # 初始化DeepSeek客户端
+        client = OpenAI(api_key="sk-20cd9c574c07459faffcd263650d0b47", base_url="https://api.deepseek.com")
+        
+        # 构建提示语
+        prompt = f"""
+        作为岩爆风险评估专家，请针对以下岩石参数和预测结果，给出详细的岩爆防治建议：
+        
+        岩石类型: {rock_type}
+        预测结果: {prediction_text}
+        
+        主要参数:
+        - 围岩应力: {sigma_theta} MPa
+        - 单轴抗压强度: {sigma_c} MPa
+        - 抗拉强度: {sigma_t} MPa
+        - σθ/σc比值: {sigma_theta_c_ratio}
+        - σc/σt比值: {sigma_c_t_ratio}
+        - 含水率: {wet}
+        
+        请从工程实践角度给出专业的防治建议，内容包括但不限于:
+        1. 岩爆风险分析（分析该岩石参数下可能发生岩爆的类型和强度）
+        2. 具体防治措施（如开挖技术选择、支护方案设计、监测系统布置等）
+        3. 施工注意事项
+        
+        请用中文回答，并确保建议具有实操性。
+        """
+        
+        # 调用DeepSeek API
+        response = client.chat.completions.create(
+            model="deepseek-chat",
+            messages=[
+                {"role": "system", "content": "You are a helpful assistant specialized in Rock burst grade prediction and prevention."},
+                {"role": "user", "content": prompt}
+            ],
+            stream=False
+        )
+        
+        # 提取回复内容
+        advice = response.choices[0].message.content
+        return advice
+    
+    except Exception as e:
+        print(f"调用DeepSeek API出现错误: {str(e)}")
+        
+        # 返回默认建议
+        default_advice = f"""
+        ## 岩爆风险分析
+        
+        基于您提供的岩石参数，该样本被预测为**{prediction_text}**。根据经验，此类岩石在开挖过程中需要特别注意安全防护。
+        
+        ## 防治建议
+        
+        1. **开挖方法**: 采用控制爆破技术，减小扰动
+        2. **支护系统**: 使用系统锚杆和喷射混凝土支护
+        3. **监测方案**: 建议安装微震监测系统，实时监控岩体活动
+        
+        ## 施工注意事项
+        
+        - 加强人员安全培训
+        - 控制开挖进度
+        - 保持围岩稳定
+        
+        *注: 此为系统默认建议，由于无法连接到DeepSeek API，建议仅供参考。实际施工中应结合现场地质条件和专业判断。*
+        """
+        return default_advice
