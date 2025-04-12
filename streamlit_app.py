@@ -571,7 +571,7 @@ with st.sidebar:
     image = Image.open("WechatIMG250.jpg")
     # 调整图片大小，避免过大
     image_resized = image.resize((300, 300))
-    st.image(image_resized, use_column_width=True, caption="中南大学可持续岩土实验室")
+    st.image(image_resized, use_column_width=True, caption="中南大学岩土安全与可持续研究实验室")
     
     st.markdown('<div class="divider"></div>', unsafe_allow_html=True)
     
