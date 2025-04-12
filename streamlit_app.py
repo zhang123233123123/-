@@ -412,35 +412,56 @@ with st.sidebar:
     
     st.markdown('<div class="divider"></div>', unsafe_allow_html=True)
     
-    # 关键参数输入 - 使用更现代的样式
-    st.markdown('<p class="param-label">围岩应力 (σθ / Mpa)</p>', unsafe_allow_html=True)
-    sigma_theta = st.slider("", 10.0, 200.0, 50.0, 0.1, key="sigma_theta_slider")
-    
-    st.markdown('<p class="param-label">单轴抗压强度 (σc / Mpa)</p>', unsafe_allow_html=True)
-    sigma_c = st.slider("", 20.0, 300.0, 100.0, 0.1, key="sigma_c_slider")
-    
-    st.markdown('<p class="param-label">抗拉强度 (σt / MPa)</p>', unsafe_allow_html=True)
-    sigma_t = st.slider("", 1.0, 50.0, 10.0, 0.1, key="sigma_t_slider")
-    
-    # 自动计算比率
-    sigma_theta_c_ratio = sigma_theta / sigma_c
-    sigma_c_t_ratio = sigma_c / sigma_t
-    
-    # 显示计算出的比率 - 使用更优雅的显示方式
-    st.markdown('<div class="dashboard-card">', unsafe_allow_html=True)
-    col1, col2 = st.columns(2)
-    with col1:
-        st.markdown('<p class="param-label">σθ/σc 比值</p>', unsafe_allow_html=True)
-        st.markdown(f'<p class="param-value">{sigma_theta_c_ratio:.2f}</p>', unsafe_allow_html=True)
-    with col2:
-        st.markdown('<p class="param-label">σc/σt 比值</p>', unsafe_allow_html=True)
-        st.markdown(f'<p class="param-value">{sigma_c_t_ratio:.2f}</p>', unsafe_allow_html=True)
-    st.markdown('</div>', unsafe_allow_html=True)
-    
-    # 含水率
-    st.markdown('<p class="param-label">含水率 (Wet)</p>', unsafe_allow_html=True)
-    wet = st.slider("", 0.0, 1.0, 0.5, 0.01, key="wet_slider")
-    
+    # 添加表单以改善用户输入体验
+    with st.form(key="rock_parameters_form"):
+        st.markdown('<h3>岩石力学参数</h3>', unsafe_allow_html=True)
+        st.markdown('<div class="title-decoration"></div>', unsafe_allow_html=True)
+        
+        # 布局为两列
+        cols1, cols2 = st.columns(2)
+        
+        with cols1:
+            # 关键参数输入 - 使用更现代的样式
+            st.markdown('<p class="param-label">围岩应力 (σθ / Mpa)</p>', unsafe_allow_html=True)
+            sigma_theta = st.number_input("", min_value=10.0, max_value=200.0, value=50.0, step=0.1, key="sigma_theta_input")
+            
+            st.markdown('<p class="param-label">单轴抗压强度 (σc / Mpa)</p>', unsafe_allow_html=True)
+            sigma_c = st.number_input("", min_value=20.0, max_value=300.0, value=100.0, step=0.1, key="sigma_c_input")
+            
+            st.markdown('<p class="param-label">抗拉强度 (σt / MPa)</p>', unsafe_allow_html=True)
+            sigma_t = st.number_input("", min_value=1.0, max_value=50.0, value=10.0, step=0.1, key="sigma_t_input")
+            
+        with cols2:
+            # 添加埋深参数
+            st.markdown('<p class="param-label">埋深 (depth / m)</p>', unsafe_allow_html=True)
+            depth = st.number_input("", min_value=0.0, max_value=2000.0, value=500.0, step=10.0, key="depth_input")
+            
+            # 含水率
+            st.markdown('<p class="param-label">含水率 (Wet)</p>', unsafe_allow_html=True)
+            wet = st.number_input("", min_value=0.0, max_value=1.0, value=0.5, step=0.01, key="wet_input")
+            
+            # 添加岩石密度参数
+            st.markdown('<p class="param-label">岩石密度 (ρ / g/cm³)</p>', unsafe_allow_html=True)
+            density = st.number_input("", min_value=1.0, max_value=5.0, value=2.7, step=0.1, key="density_input")
+        
+        # 自动计算比率 - 放在表单下方
+        sigma_theta_c_ratio = sigma_theta / sigma_c
+        sigma_c_t_ratio = sigma_c / sigma_t
+        
+        # 显示计算出的比率 - 使用更优雅的显示方式
+        st.markdown('<div class="dashboard-card">', unsafe_allow_html=True)
+        col1, col2 = st.columns(2)
+        with col1:
+            st.markdown('<p class="param-label">σθ/σc 比值</p>', unsafe_allow_html=True)
+            st.markdown(f'<p class="param-value">{sigma_theta_c_ratio:.2f}</p>', unsafe_allow_html=True)
+        with col2:
+            st.markdown('<p class="param-label">σc/σt 比值</p>', unsafe_allow_html=True)
+            st.markdown(f'<p class="param-value">{sigma_c_t_ratio:.2f}</p>', unsafe_allow_html=True)
+        st.markdown('</div>', unsafe_allow_html=True)
+        
+        # 表单提交按钮
+        submit_button = st.form_submit_button(label="开始预测分析", use_container_width=True)
+        
     st.markdown('<div class="divider"></div>', unsafe_allow_html=True)
     
     # 关于部分 - 更现代的设计
@@ -467,6 +488,8 @@ with col1:
         {"label": "σθ/σc", "value": f"{sigma_theta_c_ratio:.2f}", "icon": "📊"},
         {"label": "σc/σt", "value": f"{sigma_c_t_ratio:.2f}", "icon": "📉"},
         {"label": "含水率", "value": f"{wet:.2f}", "icon": "💧"},
+        {"label": "埋深", "value": f"{depth:.0f} m", "icon": "⛰️"},
+        {"label": "岩石密度", "value": f"{density:.1f} g/cm³", "icon": "⚖️"},
     ]
     
     for i, param in enumerate(params):
@@ -481,8 +504,8 @@ with col1:
     
     st.markdown('</div>', unsafe_allow_html=True)
     
-    # 预测按钮 - 现代设计
-    if st.button("开始预测分析", key="predict_button"):
+    # 预测结果处理 - 从表单提交按钮触发
+    if submit_button:
         with st.spinner("正在分析岩石参数，请稍候..."):
             # 显示进度条
             progress_bar = st.progress(0)
@@ -498,7 +521,9 @@ with col1:
                 "sigma_t": sigma_t,
                 "sigma_theta_c_ratio": sigma_theta_c_ratio,
                 "sigma_c_t_ratio": sigma_c_t_ratio,
-                "wet": wet
+                "wet": wet,
+                "depth": depth,
+                "density": density
             }
             
             try:
@@ -547,16 +572,32 @@ with col1:
                             time.sleep(0.02)
                             ai_progress.progress(i + 1)
                         
+                        # 获取当前参数
+                        ai_input_data = {
+                            "rock_type": selected_rock,
+                            "prediction_text": get_rock_burst_grade_text(int(rock_type_encoded % 4)),  # 模拟一个预测结果
+                            "sigma_theta": sigma_theta,
+                            "sigma_c": sigma_c,
+                            "sigma_t": sigma_t,
+                            "sigma_theta_c_ratio": sigma_theta_c_ratio,
+                            "sigma_c_t_ratio": sigma_c_t_ratio,
+                            "wet": wet,
+                            "depth": depth,
+                            "density": density
+                        }
+                        
                         # 调用DeepSeek API获取建议
                         ai_advice = get_deepseek_advice(
-                            selected_rock, 
-                            grade_text,
-                            sigma_theta,
-                            sigma_c,
-                            sigma_t,
-                            sigma_theta_c_ratio,
-                            sigma_c_t_ratio,
-                            wet
+                            ai_input_data["rock_type"], 
+                            ai_input_data["prediction_text"],
+                            ai_input_data["sigma_theta"],
+                            ai_input_data["sigma_c"],
+                            ai_input_data["sigma_t"],
+                            ai_input_data["sigma_theta_c_ratio"],
+                            ai_input_data["sigma_c_t_ratio"],
+                            ai_input_data["wet"],
+                            ai_input_data["depth"],
+                            ai_input_data["density"]
                         )
                         
                         # 显示AI建议
@@ -709,16 +750,46 @@ with insight_cols[0]:
     st.markdown('<div class="dashboard-card">', unsafe_allow_html=True)
     st.markdown('<h3>岩爆风险趋势</h3>', unsafe_allow_html=True)
     
-    # 模拟数据 - 岩爆风险随深度变化
-    depths = np.arange(100, 1100, 100)
-    risk_probs = [0.05, 0.12, 0.25, 0.42, 0.58, 0.72, 0.80, 0.86, 0.91, 0.95]
+    # 使用Logistic函数计算岩爆概率
+    def rockburst_probability(depth):
+        """使用Logistic函数计算不同埋深的岩爆概率
+        P(x) = 1 / (1 + e^(-k*(x-x0)))
+        """
+        k = 0.0063  # 曲线斜率参数
+        x0 = 450    # 中点位置(概率为0.5时的埋深)
+        return 1 / (1 + np.exp(-k * (depth - x0)))
+    
+    # 生成更密集的深度数据点以显示平滑曲线
+    depths = np.linspace(100, 1100, 100)
+    risk_probs = [rockburst_probability(d) for d in depths]
+    
+    # 标记实际深度的风险概率
+    user_depth_prob = rockburst_probability(depth)
     
     # 创建趋势图
     trend_fig = px.line(
         x=depths, 
         y=risk_probs,
         labels={"x": "埋深 (m)", "y": "岩爆发生概率"},
-        markers=True
+        markers=False  # 不显示所有点的标记，只显示平滑曲线
+    )
+    
+    # 添加用户当前深度的标记点
+    trend_fig.add_scatter(
+        x=[depth],
+        y=[user_depth_prob],
+        mode='markers',
+        marker=dict(size=12, color='red', symbol='star'),
+        name=f'当前埋深: {depth}m'
+    )
+    
+    # 添加公式注释
+    trend_fig.add_annotation(
+        x=800,
+        y=0.2,
+        text="P(x) = 1 / (1 + e^(-0.0063(x-450)))",
+        showarrow=False,
+        font=dict(size=12, color="#334155")
     )
     
     trend_fig.update_layout(
@@ -735,16 +806,26 @@ with insight_cols[0]:
             showgrid=True,
             gridcolor='#E2E8F0',
             tickformat='.0%'
+        ),
+        legend=dict(
+            orientation="h",
+            yanchor="bottom",
+            y=-0.3,
+            xanchor="center",
+            x=0.5
         )
     )
     
     trend_fig.update_traces(
         line=dict(color='#3B82F6', width=3),
-        marker=dict(color='#2563EB', size=8)
+        selector=dict(type='scatter', mode='lines')
     )
     
     st.plotly_chart(trend_fig, use_container_width=True)
     
+    # 显示风险等级文本
+    risk_level = "低" if user_depth_prob < 0.3 else "中" if user_depth_prob < 0.7 else "高"
+    st.markdown(f'<p style="font-size: 0.85rem; color: #64748b; text-align: center; font-style: italic;">当前埋深({depth}m)下的岩爆风险: <span style="font-weight: bold; color: {"#10B981" if risk_level == "低" else "#F59E0B" if risk_level == "中" else "#DC2626"}">{risk_level}({user_depth_prob:.1%})</span></p>', unsafe_allow_html=True)
     st.markdown('<p style="font-size: 0.85rem; color: #64748b; text-align: center; font-style: italic;">岩爆风险随埋深增加而显著上升</p>', unsafe_allow_html=True)
     st.markdown('</div>', unsafe_allow_html=True)
 
@@ -887,7 +968,9 @@ if st.button("获取AI专家建议", key="ai_advice_button"):
             "sigma_t": sigma_t,
             "sigma_theta_c_ratio": sigma_theta_c_ratio,
             "sigma_c_t_ratio": sigma_c_t_ratio,
-            "wet": wet
+            "wet": wet,
+            "depth": depth,
+            "density": density
         }
         
         # 调用DeepSeek API获取建议
@@ -899,7 +982,9 @@ if st.button("获取AI专家建议", key="ai_advice_button"):
             ai_input_data["sigma_t"],
             ai_input_data["sigma_theta_c_ratio"],
             ai_input_data["sigma_c_t_ratio"],
-            ai_input_data["wet"]
+            ai_input_data["wet"],
+            ai_input_data["depth"],
+            ai_input_data["density"]
         )
         
         # 显示AI建议
