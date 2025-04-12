@@ -11,7 +11,7 @@ import os
 # 设置页面
 st.set_page_config(
     page_title="中南大学·智能岩爆风险评估系统",
-    page_icon="🪨",
+    page_icon="中南大学",
     layout="wide",
     initial_sidebar_state="expanded"
 )
