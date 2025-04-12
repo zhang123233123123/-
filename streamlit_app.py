@@ -395,7 +395,7 @@ st.markdown(f'''
 <div class="header-container">
     <img src="data:image/jpeg;base64,{logo_base64}" class="university-logo" alt="中南大学校徽" style="max-width: 70px; max-height: 70px; object-fit: contain;">
     <div>
-        <h1 style="margin: 0;">🪨 智能岩爆风险评估系统</h1>
+        <h1 style="margin: 0;">中南大学智能岩爆风险评估系统 🪨</h1>
         <div style="display: flex; align-items: center;">
             <p style="font-size: 1rem; color: #64748b; margin: 5px 0 0 0;">
                 基于先进的机器学习算法，为您提供精准的岩爆风险评估和防护建议
@@ -559,7 +559,7 @@ with st.sidebar:
     <div style="text-align: center; margin-bottom: 20px;">
         <img src="data:image/jpeg;base64,{logo_base64}" 
             style="height: 60px; width: 60px; object-fit: contain; margin-bottom: 10px; border-radius: 50%; border: 2px solid #1E40AF; padding: 3px; background-color: white;" alt="中南大学校徽">
-        <p style="color: #1E40AF; font-weight: 600; margin: 5px 0;">中南大学可持续岩土实验室</p>
+        <p style="color: #1E40AF; font-weight: 600; margin: 5px 0;">中南大学岩土安全与可持续研究实验室</p>
     </div>
     ''', unsafe_allow_html=True)
     
