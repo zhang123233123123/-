@@ -8,6 +8,17 @@ from PIL import Image
 import base64
 import os
 
+# 初始化默认input_data
+input_data = {
+    "rock_type": 1.0,  # 默认为花岗岩
+    "sigma_theta": 50.0,  # 默认围岩应力值
+    "sigma_c": 100.0,    # 默认抗压强度值
+    "sigma_t": 10.0,     # 默认抗拉强度值 
+    "sigma_theta_c_ratio": 0.5,  # 默认围岩应力比
+    "sigma_c_t_ratio": 10.0,     # 默认强度比
+    "wet": 0.5           # 默认含水率
+}
+
 # 设置页面
 st.set_page_config(
     page_title="中南大学·智能岩爆风险评估系统",
@@ -400,7 +411,7 @@ st.markdown(f'''
             <p style="font-size: 1rem; color: #64748b; margin: 5px 0 0 0;">
                 基于先进的机器学习算法，为您提供精准的岩爆风险评估和防护建议
             </p>
-            <span class="lab-badge">中南大学可持续岩土实验室</span>
+            <span class="lab-badge">中南大学岩土安全与可持续研究实验室</span>
         </div>
     </div>
 </div>
@@ -559,7 +570,7 @@ with st.sidebar:
     <div style="text-align: center; margin-bottom: 20px;">
         <img src="data:image/jpeg;base64,{logo_base64}" 
             style="height: 60px; width: 60px; object-fit: contain; margin-bottom: 10px; border-radius: 50%; border: 2px solid #1E40AF; padding: 3px; background-color: white;" alt="中南大学校徽">
-        <p style="color: #1E40AF; font-weight: 600; margin: 5px 0;">中南大学可持续岩土实验室</p>
+        <p style="color: #1E40AF; font-weight: 600; margin: 5px 0;">中南大学岩土安全与可持续研究实验室</p>
     </div>
     ''', unsafe_allow_html=True)
     
@@ -571,7 +582,7 @@ with st.sidebar:
     image = Image.open("WechatIMG250.jpg")
     # 调整图片大小，避免过大
     image_resized = image.resize((300, 300))
-    st.image(image_resized, use_column_width=True, caption="中南大学可持续岩土实验室")
+    st.image(image_resized, use_column_width=True, caption="中南大学岩土安全与可持续研究实验室")
     
     st.markdown('<div class="divider"></div>', unsafe_allow_html=True)
     
@@ -1250,7 +1261,7 @@ st.markdown('<div class="footer-container">', unsafe_allow_html=True)
 st.markdown('''
 <div style="display: flex; justify-content: space-between; align-items: center; padding: 20px 0;">
     <div>
-        <p style="margin: 0; color: #64748b; font-size: 0.9rem;">© 2023-2024 中南大学可持续岩土实验室 | 版本 2.1.0</p>
+        <p style="margin: 0; color: #64748b; font-size: 0.9rem;">© 2023-2024 中南大学岩土安全与可持续研究实验室 | 版本 2.1.0</p>
     </div>
     <div>
         <p style="margin: 0; color: #64748b; font-size: 0.9rem;">技术支持: 中南大学岩石力学与智能实验室</p>
