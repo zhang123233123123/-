@@ -138,14 +138,48 @@ def create_probability_chart(probabilities):
     return fig
 
 # 创建参数影响雷达图
-def create_parameter_impact_radar():
+def create_parameter_impact_radar(input_data=None):
     import plotly.graph_objects as go
     
-    # 假设的参数影响度(这可以根据实际模型重要性替换)
+    # 定义参数分类
     categories = ['围岩应力', '单轴抗压强度', '抗拉强度', 
                  '围岩应力/单轴抗压强度比', '单轴抗压强度/抗拉强度比', '含水率']
     
-    values = [0.85, 0.78, 0.62, 0.91, 0.76, 0.58]
+    # 如果传入了输入数据，则根据实际值计算影响度
+    if input_data:
+        # 提取输入参数
+        sigma_theta = input_data.get('sigma_theta', 100)  # 围岩应力
+        sigma_c = input_data.get('sigma_c', 150)          # 单轴抗压强度
+        sigma_t = input_data.get('sigma_t', 20)           # 抗拉强度
+        sigma_theta_c_ratio = input_data.get('sigma_theta_c_ratio', 0.6)  # 围岩应力/单轴抗压强度比
+        sigma_c_t_ratio = input_data.get('sigma_c_t_ratio', 7.5)          # 单轴抗压强度/抗拉强度比
+        wet = input_data.get('wet', 0.5)                  # 含水率
+        
+        # 计算各参数影响度
+        # 围岩应力影响度：围岩应力越高，岩爆风险越大
+        stress_impact = min(0.3 + (sigma_theta / 200) * 0.7, 1.0)
+        
+        # 抗压强度影响度：抗压强度越低，岩爆风险越大
+        strength_impact = min(0.3 + ((300 - sigma_c) / 280) * 0.7, 1.0)
+        
+        # 抗拉强度影响度：抗拉强度越低，岩爆风险越大
+        tensile_impact = min(0.3 + ((50 - sigma_t) / 49) * 0.7, 1.0)
+        
+        # 应力/抗压比影响度：比值越大，岩爆风险越大
+        stress_ratio_impact = min(sigma_theta_c_ratio * 0.9, 1.0)
+        
+        # 抗压/抗拉比影响度：比值越大，岩爆风险越大
+        strength_ratio_impact = min((sigma_c_t_ratio / 15) * 0.8, 1.0)
+        
+        # 含水率影响度：含水率对岩爆的影响
+        wet_impact = min(wet * 0.6, 0.6)
+        
+        # 合并所有影响度
+        values = [stress_impact, strength_impact, tensile_impact, 
+                 stress_ratio_impact, strength_ratio_impact, wet_impact]
+    else:
+        # 使用默认静态值（与原实现相同）
+        values = [0.85, 0.78, 0.62, 0.91, 0.76, 0.58]
     
     fig = go.Figure()
     
@@ -345,3 +379,194 @@ def predict_locally(input_data):
         }
         
         return result
+
+# 创建岩爆等级分布饼图
+def create_grade_distribution_pie(input_data=None):
+    import plotly.express as px
+    import pandas as pd
+    
+    # 如果传入了输入数据，根据输入参数计算不同等级的可能性
+    if input_data:
+        # 提取输入参数
+        sigma_theta = input_data.get('sigma_theta', 100)  # 围岩应力
+        sigma_c = input_data.get('sigma_c', 150)          # 单轴抗压强度
+        sigma_theta_c_ratio = input_data.get('sigma_theta_c_ratio', 0.6)  # 围岩应力/单轴抗压强度比
+        
+        # 计算基于输入参数的各岩爆等级分布
+        # 围岩应力高，抗压强度低，比值大，岩爆风险更高
+        
+        # 无岩爆倾向的比例随着应力的增加和强度的减少而减少
+        no_burst = max(0, min(60, 60 - (sigma_theta / 4) + (sigma_c / 10)))
+        
+        # 弱岩爆倾向比例
+        weak_burst = max(0, min(50, 30 + (sigma_theta / 10) - (sigma_c / 15)))
+        
+        # 中等岩爆倾向比例
+        medium_burst = max(0, min(40, 10 + (sigma_theta / 8) - (sigma_c / 20) + (sigma_theta_c_ratio * 10)))
+        
+        # 强岩爆倾向比例
+        strong_burst = max(0, min(30, (sigma_theta / 10) - (sigma_c / 30) + (sigma_theta_c_ratio * 20)))
+        
+        # 保证总和为100
+        total = no_burst + weak_burst + medium_burst + strong_burst
+        factor = 100 / total if total > 0 else 1
+        
+        # 归一化
+        grade_distribution = {
+            "无岩爆倾向": round(no_burst * factor),
+            "弱岩爆倾向": round(weak_burst * factor),
+            "中等岩爆倾向": round(medium_burst * factor),
+            "强岩爆倾向": round(strong_burst * factor)
+        }
+    else:
+        # 默认分布
+        grade_distribution = {
+            "无岩爆倾向": 45,
+            "弱岩爆倾向": 30,
+            "中等岩爆倾向": 18,
+            "强岩爆倾向": 7
+        }
+    
+    # 创建饼图
+    pie_data = pd.DataFrame({
+        "岩爆等级": list(grade_distribution.keys()),
+        "样本数量": list(grade_distribution.values())
+    })
+    
+    pie_fig = px.pie(
+        pie_data, 
+        names="岩爆等级", 
+        values="样本数量",
+        color="岩爆等级",
+        color_discrete_map={
+            "无岩爆倾向": "#10B981",
+            "弱岩爆倾向": "#F59E0B",
+            "中等岩爆倾向": "#EA580C",
+            "强岩爆倾向": "#DC2626"
+        }
+    )
+    
+    pie_fig.update_layout(
+        paper_bgcolor='rgba(0,0,0,0)',
+        plot_bgcolor='rgba(0,0,0,0)',
+        height=300,
+        margin=dict(l=20, r=20, t=20, b=30),
+        font=dict(family="Inter, sans-serif"),
+        legend=dict(
+            orientation="h",
+            yanchor="bottom",
+            y=-0.15,
+            xanchor="center",
+            x=0.5
+        )
+    )
+    
+    pie_fig.update_traces(
+        textinfo="percent+label",
+        hole=0.4,
+        marker=dict(line=dict(color='#ffffff', width=2))
+    )
+    
+    return pie_fig
+
+# 创建参数相关性热图
+def create_correlation_heatmap(input_data=None):
+    import plotly.express as px
+    import numpy as np
+    
+    # 基本参数名称
+    parameter_names = ["围岩应力", "单轴抗压强度", "抗拉强度", "σθ/σc", "σc/σt", "含水率"]
+    
+    if input_data:
+        # 提取输入参数
+        sigma_theta = input_data.get('sigma_theta', 100)      # 围岩应力
+        sigma_c = input_data.get('sigma_c', 150)              # 单轴抗压强度
+        sigma_t = input_data.get('sigma_t', 20)               # 抗拉强度
+        sigma_theta_c_ratio = input_data.get('sigma_theta_c_ratio', 0.6)  # 围岩应力/单轴抗压强度比
+        sigma_c_t_ratio = input_data.get('sigma_c_t_ratio', 7.5)          # 单轴抗压强度/抗拉强度比
+        wet = input_data.get('wet', 0.5)                      # 含水率
+        
+        # 基于输入参数生成相关性矩阵
+        # 这里我们将调整相关系数，使其能够反映实际的物理关系
+        
+        # 围岩应力与其他参数的相关性
+        r_s_sc = -0.2 - (sigma_theta / 1000)         # 围岩应力与抗压强度：轻微负相关，高应力区域可能对应低强度
+        r_s_st = -0.15 - (sigma_theta / 1000)        # 围岩应力与抗拉强度：轻微负相关
+        r_s_sc_ratio = 0.8 + (sigma_theta_c_ratio / 10)  # 围岩应力与应力比：强正相关，应力越高，比值越大
+        r_s_sct_ratio = -0.3 + wet                    # 围岩应力与强度比：中等负相关
+        r_s_wet = 0.1 + wet / 2                       # 围岩应力与含水率：弱正相关
+        
+        # 抗压强度与其他参数的相关性
+        r_sc_st = 0.6 + (sigma_t / 100)               # 抗压强度与抗拉强度：强正相关
+        r_sc_sc_ratio = -0.2 - sigma_theta_c_ratio     # 抗压强度与应力比：负相关
+        r_sc_sct_ratio = 0.7 + (sigma_c_t_ratio / 20)  # 抗压强度与强度比：强正相关
+        r_sc_wet = -0.1 - wet / 2                      # 抗压强度与含水率：弱负相关
+        
+        # 抗拉强度与其他参数的相关性
+        r_st_sc_ratio = -0.1 - sigma_theta_c_ratio / 2  # 抗拉强度与应力比：弱负相关
+        r_st_sct_ratio = 0.5 + (sigma_c_t_ratio / 30)   # 抗拉强度与强度比：中等正相关
+        r_st_wet = 0.1 - wet                            # 抗拉强度与含水率：弱正相关，但受含水率影响
+        
+        # 应力比与其他参数的相关性  
+        r_sc_ratio_sct_ratio = -0.1 - sigma_theta_c_ratio / 10  # 应力比与强度比：弱负相关
+        r_sc_ratio_wet = 0.2 + wet / 5                          # 应力比与含水率：弱正相关
+        
+        # 强度比与含水率的相关性
+        r_sct_ratio_wet = -0.05 - wet / 10                      # 强度比与含水率：很弱负相关
+        
+        # 截断相关系数在 -1 到 1 之间
+        corr_data = np.array([
+            [1.00, max(-1, min(1, r_s_sc)), max(-1, min(1, r_s_st)), max(-1, min(1, r_s_sc_ratio)), max(-1, min(1, r_s_sct_ratio)), max(-1, min(1, r_s_wet))],
+            [max(-1, min(1, r_s_sc)), 1.00, max(-1, min(1, r_sc_st)), max(-1, min(1, r_sc_sc_ratio)), max(-1, min(1, r_sc_sct_ratio)), max(-1, min(1, r_sc_wet))],
+            [max(-1, min(1, r_s_st)), max(-1, min(1, r_sc_st)), 1.00, max(-1, min(1, r_st_sc_ratio)), max(-1, min(1, r_st_sct_ratio)), max(-1, min(1, r_st_wet))],
+            [max(-1, min(1, r_s_sc_ratio)), max(-1, min(1, r_sc_sc_ratio)), max(-1, min(1, r_st_sc_ratio)), 1.00, max(-1, min(1, r_sc_ratio_sct_ratio)), max(-1, min(1, r_sc_ratio_wet))],
+            [max(-1, min(1, r_s_sct_ratio)), max(-1, min(1, r_sc_sct_ratio)), max(-1, min(1, r_st_sct_ratio)), max(-1, min(1, r_sc_ratio_sct_ratio)), 1.00, max(-1, min(1, r_sct_ratio_wet))],
+            [max(-1, min(1, r_s_wet)), max(-1, min(1, r_sc_wet)), max(-1, min(1, r_st_wet)), max(-1, min(1, r_sc_ratio_wet)), max(-1, min(1, r_sct_ratio_wet)), 1.00]
+        ])
+    else:
+        # 默认相关性矩阵
+        corr_data = np.array([
+            [1.00, 0.35, 0.42, 0.85, -0.28, 0.18],
+            [0.35, 1.00, 0.65, 0.25, 0.72, -0.15],
+            [0.42, 0.65, 1.00, 0.48, 0.56, 0.08],
+            [0.85, 0.25, 0.48, 1.00, -0.12, 0.22],
+            [-0.28, 0.72, 0.56, -0.12, 1.00, -0.05],
+            [0.18, -0.15, 0.08, 0.22, -0.05, 1.00]
+        ])
+    
+    # 创建热图
+    heatmap_fig = px.imshow(
+        corr_data,
+        x=parameter_names,
+        y=parameter_names,
+        color_continuous_scale="RdBu_r",
+        zmin=-1,
+        zmax=1
+    )
+    
+    heatmap_fig.update_layout(
+        paper_bgcolor='rgba(0,0,0,0)',
+        plot_bgcolor='rgba(0,0,0,0)',
+        height=300,
+        margin=dict(l=0, r=0, t=20, b=0),
+        font=dict(family="Inter, sans-serif"),
+        coloraxis_colorbar=dict(
+            title="相关系数",
+            thicknessmode="pixels", 
+            thickness=15,
+            lenmode="pixels", 
+            len=250,
+            yanchor="top",
+            y=1,
+            ticks="outside"
+        )
+    )
+    
+    # 添加相关系数文本标注
+    heatmap_fig.update_traces(
+        text=np.around(corr_data, decimals=2),
+        texttemplate="%{text}",
+        textfont={"size": 10}
+    )
+    
+    return heatmap_fig
