@@ -22,38 +22,33 @@ def load_model():
 
 # 修改特征工程函数以匹配训练时的特征工程
 def feature_engineering(X):
-    """特征工程 - 必须与训练模型时使用的完全相同"""
-    # 保存原始特征的副本
-    X_engineered = X.copy()
+    """特征工程 - 完全匹配训练模型时使用的特征工程"""
+    # 保存原始特征
+    X_new = X.copy()
+
+    # 确保数值列按字母顺序排序，与训练时完全一致
+    numeric_cols = sorted(X.select_dtypes(include=[np.number]).columns.tolist())
     
-    # 确保列名正确
-    expected_columns = ['岩石种类', 'σθ / Mpa', 'σc / Mpa', 'σt / MPa', 'σθ/σc', 'σc/σt', 'Wet']
-    if not all(col in X_engineered.columns for col in expected_columns):
-        raise ValueError(f"输入数据缺少必要的列，期望的列: {expected_columns}，实际的列: {list(X_engineered.columns)}")
-    
-    # 1. 创建交互特征
-    numeric_cols = X_engineered.select_dtypes(include=[np.number]).columns
-    
-    # 确保按照固定的顺序处理列，以保证特征名称的一致性
-    numeric_cols = sorted(numeric_cols)
-    
+    # 创建交互特征 - 确保顺序和命名方式与训练时一致
     for i in range(len(numeric_cols)):
-        for j in range(i + 1, len(numeric_cols)):
-            col1, col2 = numeric_cols[i], numeric_cols[j]
-            X_engineered[f'{col1}_{col2}_ratio'] = X_engineered[col1] / (X_engineered[col2] + 1e-8)  # 防止除零
-            X_engineered[f'{col1}_{col2}_product'] = X_engineered[col1] * X_engineered[col2]
-            X_engineered[f'{col1}_{col2}_sum'] = X_engineered[col1] + X_engineered[col2]
-    
-    # 2. 创建多项式特征
+        for j in range(len(numeric_cols)):
+            if i != j:  # 不与自身交互
+                col1, col2 = numeric_cols[i], numeric_cols[j]
+                X_new[f'{col1}_{col2}_ratio'] = X[col1] / (X[col2] + 1e-8)
+                X_new[f'{col1}_{col2}_product'] = X[col1] * X[col2]
+                X_new[f'{col1}_{col2}_sum'] = X[col1] + X[col2]
+
+    # 添加多项式特征 - 与训练时保持一致
     for col in numeric_cols:
-        X_engineered[f'{col}_squared'] = X_engineered[col] ** 2
-        X_engineered[f'{col}_cubed'] = X_engineered[col] ** 3
-        X_engineered[f'{col}_sqrt'] = np.sqrt(np.abs(X_engineered[col]))
-        X_engineered[f'{col}_log'] = np.log1p(np.abs(X_engineered[col]))
-    
+        X_new[f'{col}_squared'] = X[col] ** 2
+        X_new[f'{col}_cubed'] = X[col] ** 3
+        X_new[f'{col}_sqrt'] = np.sqrt(np.abs(X[col]))
+        X_new[f'{col}_log'] = np.log1p(np.abs(X[col]))
+
     # 输出转换后的特征数
-    print(f"特征工程后的特征数: {X_engineered.shape[1]}")
-    return X_engineered
+    print(f"特征工程后的特征数: {X_new.shape[1]}")
+    
+    return X_new
 
 # 获取岩爆等级文本描述
 def get_rock_burst_grade_text(grade):
@@ -218,7 +213,7 @@ def create_parameter_impact_radar():
 def predict_locally(input_data):
     """使用本地模型进行预测"""
     try:
-        # 加载模型 - 如果失败会直接抛出异常
+        # 加载模型
         model = load_model()
         
         # 创建DataFrame，确保列名正确
@@ -238,37 +233,42 @@ def predict_locally(input_data):
         # 重命名列
         input_df = input_df.rename(columns=column_mapping)
         
-        # 应用与训练时完全相同的特征工程
-        input_df_engineered = feature_engineering(input_df)
-        
-        # 检查模型所需的特征
-        model_features = None
-        # 尝试获取模型所需的特征名称
+        # 获取模型所需的特征名称
         if hasattr(model, 'feature_names_in_'):
             model_features = model.feature_names_in_
-        
-        # 如果能获取到模型特征，则确保输入数据包含所有这些特征
-        if model_features is not None:
-            missing_features = set(model_features) - set(input_df_engineered.columns)
-            extra_features = set(input_df_engineered.columns) - set(model_features)
+        else:
+            print("模型没有feature_names_in_属性，无法验证特征名称")
+            # 直接应用特征工程
+            input_df_engineered = feature_engineering(input_df)
+            prediction = model.predict(input_df_engineered)[0]
+            probabilities = model.predict_proba(input_df_engineered)[0]
             
-            if missing_features:
-                print(f"缺少模型所需的特征: {missing_features}")
-                
-            # 仅保留模型所需的特征，按正确顺序
-            input_df_final = pd.DataFrame(index=input_df_engineered.index)
-            for feature in model_features:
-                if feature in input_df_engineered.columns:
-                    input_df_final[feature] = input_df_engineered[feature]
-                else:
-                    # 对于缺失的特征，填充0
-                    input_df_final[feature] = 0
-            
-            input_df_engineered = input_df_final
+            result = {
+                "prediction": int(prediction),
+                "prediction_text": get_rock_burst_grade_text(prediction),
+                "probabilities": {f"Class {i}": float(prob) for i, prob in enumerate(probabilities)}
+            }
+            return result
         
-        # 使用模型进行预测
-        prediction = model.predict(input_df_engineered)[0]
-        probabilities = model.predict_proba(input_df_engineered)[0]
+        # 创建一个特征值全为0的DataFrame，包含模型所需的所有特征
+        input_zero = pd.DataFrame(0, index=[0], columns=model_features)
+        
+        # 填入原始特征值
+        for col in input_df.columns:
+            if col in model_features:
+                input_zero[col] = input_df[col].values[0]
+        
+        # 应用特征工程来生成其他特征
+        X_engineered = feature_engineering(input_df)
+        
+        # 填入生成的特征值
+        for col in X_engineered.columns:
+            if col in model_features and col not in input_df.columns:
+                input_zero[col] = X_engineered[col].values[0]
+        
+        # 使用处理好的特征进行预测
+        prediction = model.predict(input_zero)[0]
+        probabilities = model.predict_proba(input_zero)[0]
         
         # 构建结果
         result = {
@@ -278,8 +278,6 @@ def predict_locally(input_data):
         }
         
         return result
-        
     except Exception as e:
         print(f"预测过程中出现错误: {str(e)}")
-        # 在这里我们不提供备用模型，而是直接向用户展示错误
         raise e
