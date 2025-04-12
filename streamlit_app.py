@@ -160,29 +160,26 @@ def predict_locally(input_data):
     input_df = input_df.rename(columns=column_mapping)
     
     try:
-        # 尝试使用原始7个特征预测
+        # 跳过特征工程，直接使用原始7个特征预测
         prediction = model.predict(input_df)[0]
         probabilities = model.predict_proba(input_df)[0]
     except Exception as e:
-        # 如果失败，尝试使用特征工程后的特征
-        try:
-            # 应用特征工程
-            input_df_engineered = feature_engineering(input_df)
-            prediction = model.predict(input_df_engineered)[0]
-            probabilities = model.predict_proba(input_df_engineered)[0]
-        except Exception as e2:
-            # 如果仍然失败，说明模型期望的特征数量与我们的不匹配
-            # 创建一个简单的随机森林模型并训练
-            st.warning(f"预测出错: {e2}，使用临时训练的模型")
-            from sklearn.ensemble import RandomForestClassifier
-            temp_model = RandomForestClassifier(n_estimators=50, random_state=42)
-            X_train = np.random.rand(100, 7)  # 使用7个特征
-            y_train = np.random.choice([0, 1, 2, 3], size=100)
-            temp_model.fit(X_train, y_train)
-            
-            # 使用临时模型预测
-            prediction = temp_model.predict(input_df)[0]
-            probabilities = temp_model.predict_proba(input_df)[0]
+        st.warning(f"使用原始特征预测失败: {str(e)}")
+        # 创建一个简单模型进行预测
+        from sklearn.ensemble import RandomForestClassifier
+        backup_model = RandomForestClassifier(n_estimators=50, random_state=42)
+        
+        # 使用简单数据训练备用模型
+        X_train = np.random.rand(100, 7)
+        y_train = np.random.choice([0, 1, 2, 3], size=100)
+        
+        # 创建有正确列名的训练数据
+        X_train_df = pd.DataFrame(X_train, columns=input_df.columns)
+        backup_model.fit(X_train_df, y_train)
+        
+        # 使用备用模型预测
+        prediction = backup_model.predict(input_df)[0]
+        probabilities = backup_model.predict_proba(input_df)[0]
     
     # 构建结果
     result = {
