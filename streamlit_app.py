@@ -224,7 +224,7 @@ st.markdown('<div class="title-decoration"></div>', unsafe_allow_html=True)
 st.markdown('<p style="font-size: 1.1rem; color: #64748b; margin-bottom: 30px;">基于先进的机器学习算法，为您提供精准的岩爆风险评估和防护建议</p>', unsafe_allow_html=True)
 
 # 导入预测功能
-from utils import load_model, feature_engineering, get_rock_burst_grade_text, predict_locally
+from utils import load_model, get_rock_burst_grade_text, predict_locally
 
 # 创建自定义岩爆风险可视化函数
 def create_risk_gauge(risk_level, risk_text):
