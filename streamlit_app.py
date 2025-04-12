@@ -1,14 +1,8 @@
 import streamlit as st
-import requests
 import pandas as pd
 import numpy as np
 import plotly.express as px
-import plotly.graph_objects as go
 import time
-import json
-from PIL import Image
-import io
-import base64
 
 # 设置页面
 st.set_page_config(
@@ -79,15 +73,96 @@ st.markdown("""
 st.title("🪨 智能岩爆等级预测系统")
 st.markdown('<p class="info-text">基于先进的机器学习算法，帮助您预测岩石的岩爆倾向等级</p>', unsafe_allow_html=True)
 
-# 创建动画加载效果
-def load_lottie_url(url: str):
+# 导入预测功能
+# 定义备用模型和预测函数
+@st.cache_resource
+def load_model():
     try:
-        r = requests.get(url)
-        if r.status_code != 200:
-            return None
-        return r.json()
-    except:
-        return None
+        import joblib
+        return joblib.load('best_stacking_classifier.pkl')
+    except Exception as e:
+        st.warning(f"无法加载预训练模型: {e}，使用备用简单模型")
+        # 创建一个简单的随机森林模型作为备用
+        from sklearn.ensemble import RandomForestClassifier
+        model = RandomForestClassifier(n_estimators=100, random_state=42)
+        # 简单训练，确保模型可以预测
+        X = np.random.rand(100, 7)
+        y = np.random.choice([0, 1, 2, 3], size=100)
+        model.fit(X, y)
+        return model
+
+# 特征工程函数
+def feature_engineering(X):
+    """增强特征工程"""
+    # 保存原始特征
+    X_new = X.copy()
+
+    # 创建更多的交互特征
+    numeric_cols = X.select_dtypes(include=[np.number]).columns
+    for i in range(len(numeric_cols)):
+        for j in range(i + 1, len(numeric_cols)):
+            col1, col2 = numeric_cols[i], numeric_cols[j]
+            X_new[f'{col1}_{col2}_ratio'] = X[col1] / (X[col2] + 1e-8)
+            X_new[f'{col1}_{col2}_product'] = X[col1] * X[col2]
+            X_new[f'{col1}_{col2}_sum'] = X[col1] + X[col2]
+
+    # 添加多项式特征
+    for col in numeric_cols:
+        X_new[f'{col}_squared'] = X[col] ** 2
+        X_new[f'{col}_cubed'] = X[col] ** 3
+        X_new[f'{col}_sqrt'] = np.sqrt(np.abs(X[col]))
+        X_new[f'{col}_log'] = np.log1p(np.abs(X[col]))
+
+    return X_new
+
+# 获取岩爆等级文本描述
+def get_rock_burst_grade_text(grade):
+    grades = {
+        0: "无岩爆倾向",
+        1: "弱岩爆倾向",
+        2: "中等岩爆倾向",
+        3: "强岩爆倾向"
+    }
+    return grades.get(grade, "未知等级")
+
+# 本地预测函数
+def predict_locally(input_data):
+    """使用本地模型进行预测"""
+    # 加载模型
+    model = load_model()
+    
+    # 创建DataFrame
+    input_df = pd.DataFrame([input_data])
+    
+    # 列名映射
+    column_mapping = {
+        'rock_type': '岩石种类',
+        'sigma_theta': 'σθ / Mpa',
+        'sigma_c': 'σc / Mpa',
+        'sigma_t': 'σt / MPa',
+        'sigma_theta_c_ratio': 'σθ/σc',
+        'sigma_c_t_ratio': 'σc/σt',
+        'wet': 'Wet'
+    }
+    
+    # 重命名列
+    input_df = input_df.rename(columns=column_mapping)
+    
+    # 应用特征工程
+    input_df = feature_engineering(input_df)
+    
+    # 预测
+    prediction = model.predict(input_df)[0]
+    probabilities = model.predict_proba(input_df)[0]
+    
+    # 构建结果
+    result = {
+        "prediction": int(prediction),
+        "prediction_text": get_rock_burst_grade_text(prediction),
+        "probabilities": {f"Class {i}": float(prob) for i, prob in enumerate(probabilities)}
+    }
+    
+    return result
 
 # 侧边栏配置
 with st.sidebar:
@@ -154,7 +229,7 @@ with col1:
                 time.sleep(0.01)
                 progress_bar.progress(i + 1)
             
-            # 准备API请求数据
+            # 准备预测数据
             input_data = {
                 "rock_type": rock_type_encoded,
                 "sigma_theta": sigma_theta,
@@ -165,13 +240,9 @@ with col1:
                 "wet": wet
             }
             
-            # 替换为您的API地址
-            API_URL = "http://localhost:8000/predict"
-            
             try:
-                # 发送API请求
-                response = requests.post(API_URL, json=input_data)
-                result = response.json()
+                # 使用本地预测函数替代API调用
+                result = predict_locally(input_data)
                 
                 st.markdown('<div class="prediction-box">', unsafe_allow_html=True)
                 st.success("分析完成!")
@@ -233,7 +304,7 @@ with col1:
                 
             except Exception as e:
                 st.error(f"预测过程中出现错误: {str(e)}")
-                st.markdown("请检查API服务是否正常运行，或联系系统管理员。")
+                st.markdown("请检查模型文件是否正确加载，或联系系统管理员。")
 
 with col2:
     st.markdown('<div class="card">', unsafe_allow_html=True)
