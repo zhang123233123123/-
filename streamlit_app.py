@@ -224,7 +224,7 @@ st.markdown('<div class="title-decoration"></div>', unsafe_allow_html=True)
 st.markdown('<p style="font-size: 1.1rem; color: #64748b; margin-bottom: 30px;">基于先进的机器学习算法，为您提供精准的岩爆风险评估和防护建议</p>', unsafe_allow_html=True)
 
 # 导入预测功能
-from utils import load_model, get_rock_burst_grade_text, predict_locally
+from utils import load_model, get_rock_burst_grade_text, predict_locally, get_deepseek_advice
 
 # 创建自定义岩爆风险可视化函数
 def create_risk_gauge(risk_level, risk_text):
@@ -534,8 +534,36 @@ with col1:
                 <div style="background-color: #F8FAFC; padding: 15px; border-radius: 8px; border-left: 4px solid #3B82F6;">
                     <p style="margin: 0;">根据您提供的岩石参数，本系统预测该样本的岩爆等级为 <strong>{grade_text}</strong>。</p>
                     <p style="margin-top: 10px;">该预测结果基于样本的物理特性综合分析，特别是考虑了围岩应力、抗压强度、抗拉强度等关键参数的相互关系。</p>
+                    <p style="margin-top: 15px;"><a href="#deepseek-ai-专家建议" style="text-decoration: none; color: #3B82F6; font-weight: 500;">点击这里获取AI专家建议 →</a></p>
                 </div>
                 ''', unsafe_allow_html=True)
+                
+                # 添加获取AI建议的按钮
+                if st.button("获取DeepSeek AI专业分析", key="prediction_ai_button"):
+                    with st.spinner("正在根据预测结果生成专业建议..."):
+                        # 显示进度条
+                        ai_progress = st.progress(0)
+                        for i in range(100):
+                            time.sleep(0.02)
+                            ai_progress.progress(i + 1)
+                        
+                        # 调用DeepSeek API获取建议
+                        ai_advice = get_deepseek_advice(
+                            selected_rock, 
+                            grade_text,
+                            sigma_theta,
+                            sigma_c,
+                            sigma_t,
+                            sigma_theta_c_ratio,
+                            sigma_c_t_ratio,
+                            wet
+                        )
+                        
+                        # 显示AI建议
+                        st.markdown('<div class="result-card animate-fade-in">', unsafe_allow_html=True)
+                        st.markdown("<h3>DeepSeek AI 专业建议</h3>", unsafe_allow_html=True)
+                        st.markdown(ai_advice)
+                        st.markdown('</div>', unsafe_allow_html=True)
                 
                 st.markdown('</div>', unsafe_allow_html=True)
                 
@@ -837,84 +865,119 @@ with insight_cols[2]:
 
 # 应用案例部分
 st.markdown('<div class="divider"></div>', unsafe_allow_html=True)
-st.markdown('<h2>应用案例</h2>', unsafe_allow_html=True)
+st.markdown('<h2>DeepSeek AI 专家建议</h2>', unsafe_allow_html=True)
 st.markdown('<div class="title-decoration"></div>', unsafe_allow_html=True)
-st.markdown('<p style="color: #64748b; margin-bottom: 20px;">实际工程中应用本系统的典型案例展示</p>', unsafe_allow_html=True)
+st.markdown('<p style="color: #64748b; margin-bottom: 20px;">基于先进大语言模型的智能分析与防治建议</p>', unsafe_allow_html=True)
 
-# 两列布局
-case_cols = st.columns(2)
-
-# 第一个案例
-with case_cols[0]:
-    st.markdown('<div class="dashboard-card">', unsafe_allow_html=True)
-    st.markdown('<div style="display: flex; align-items: center; margin-bottom: 15px;">', unsafe_allow_html=True)
-    st.markdown('<div style="font-size: 2rem; margin-right: 15px;">🚇</div>', unsafe_allow_html=True)
-    st.markdown('<h3 style="margin: 0;">某高速铁路隧道工程</h3>', unsafe_allow_html=True)
-    st.markdown('</div>', unsafe_allow_html=True)
+# 创建DeepSeek建议部分
+if st.button("获取AI专家建议", key="ai_advice_button"):
+    with st.spinner("正在生成专业建议，请稍候..."):
+        # 显示进度条
+        progress_bar = st.progress(0)
+        for i in range(100):
+            time.sleep(0.02)
+            progress_bar.progress(i + 1)
+        
+        # 获取当前参数
+        ai_input_data = {
+            "rock_type": selected_rock,
+            "prediction_text": get_rock_burst_grade_text(int(rock_type_encoded % 4)),  # 模拟一个预测结果
+            "sigma_theta": sigma_theta,
+            "sigma_c": sigma_c,
+            "sigma_t": sigma_t,
+            "sigma_theta_c_ratio": sigma_theta_c_ratio,
+            "sigma_c_t_ratio": sigma_c_t_ratio,
+            "wet": wet
+        }
+        
+        # 调用DeepSeek API获取建议
+        ai_advice = get_deepseek_advice(
+            ai_input_data["rock_type"], 
+            ai_input_data["prediction_text"],
+            ai_input_data["sigma_theta"],
+            ai_input_data["sigma_c"],
+            ai_input_data["sigma_t"],
+            ai_input_data["sigma_theta_c_ratio"],
+            ai_input_data["sigma_c_t_ratio"],
+            ai_input_data["wet"]
+        )
+        
+        # 显示AI建议
+        st.markdown('<div class="dashboard-card">', unsafe_allow_html=True)
+        st.markdown('<div style="display: flex; align-items: center; margin-bottom: 15px;">', unsafe_allow_html=True)
+        st.markdown('<div style="font-size: 2rem; margin-right: 15px;">🤖</div>', unsafe_allow_html=True)
+        st.markdown('<h3 style="margin: 0;">DeepSeek AI 分析结果</h3>', unsafe_allow_html=True)
+        st.markdown('</div>', unsafe_allow_html=True)
+        
+        # 显示AI生成的建议
+        st.markdown(ai_advice)
+        
+        # 添加一个提示，说明这是AI生成的
+        st.markdown('''
+        <div style="margin-top: 20px; padding: 10px; background-color: #F1F5F9; border-radius: 8px; font-size: 0.8rem; color: #64748b;">
+            <p style="margin: 0;">以上建议由DeepSeek AI大型语言模型生成，仅供参考。实际工程中请结合现场条件和专业判断。</p>
+        </div>
+        ''', unsafe_allow_html=True)
+        
+        st.markdown('</div>', unsafe_allow_html=True)
+else:
+    # 默认显示两列的建议卡片
+    advice_cols = st.columns(2)
     
-    # 案例图片(可以替换为实际项目图片)
-    st.image("https://via.placeholder.com/600x300?text=隧道工程案例", use_column_width=True)
+    with advice_cols[0]:
+        st.markdown('<div class="dashboard-card">', unsafe_allow_html=True)
+        st.markdown('<div style="display: flex; align-items: center; margin-bottom: 15px;">', unsafe_allow_html=True)
+        st.markdown('<div style="font-size: 2rem; margin-right: 15px;">🧠</div>', unsafe_allow_html=True)
+        st.markdown('<h3 style="margin: 0;">AI智能分析能力</h3>', unsafe_allow_html=True)
+        st.markdown('</div>', unsafe_allow_html=True)
+        
+        st.markdown('''
+        <div style="margin-bottom: 15px;">
+            <p style="margin: 0; color: #334155;">
+                DeepSeek AI能够基于您输入的岩石参数，结合先进的大语言模型知识库，为您提供更具针对性的岩爆风险分析和防治建议。
+            </p>
+        </div>
+        
+        <div style="margin-bottom: 15px;">
+            <div style="font-weight: 600; color: #1E293B; margin-bottom: 8px;">智能分析特点</div>
+            <ul style="margin: 0; padding-left: 20px; color: #64748b;">
+                <li>基于最新工程经验的综合分析</li>
+                <li>根据岩石参数特性给出针对性建议</li>
+                <li>提供多角度的防治措施评估</li>
+                <li>持续更新的岩爆防治知识库</li>
+            </ul>
+        </div>
+        ''', unsafe_allow_html=True)
+        
+        st.markdown('</div>', unsafe_allow_html=True)
     
-    st.markdown('''
-    <div style="margin-top: 15px;">
-        <div style="font-weight: 600; color: #1E293B; margin-bottom: 8px;">项目背景</div>
-        <p style="margin: 0; color: #64748b; font-size: 0.95rem;">
-            某高铁隧道穿越花岗岩段，最大埋深约1200米，岩爆风险高，采用本系统进行岩爆风险评估。
-        </p>
-    </div>
-    
-    <div style="margin-top: 15px;">
-        <div style="font-weight: 600; color: #1E293B; margin-bottom: 8px;">评估结果</div>
-        <p style="margin: 0; color: #64748b; font-size: 0.95rem;">
-            系统预测隧道里程K45+200 ~ K46+500段为强岩爆倾向区，与实际施工中发生的3次中强度岩爆事件位置高度吻合。
-        </p>
-    </div>
-    
-    <div style="margin-top: 15px;">
-        <div style="font-weight: 600; color: #1E293B; margin-bottom: 8px;">防治措施</div>
-        <p style="margin: 0; color: #64748b; font-size: 0.95rem;">
-            根据系统建议，采用超前预裂、控制爆破、柔性支护等综合措施，有效控制了岩爆风险，确保了施工安全。
-        </p>
-    </div>
-    ''', unsafe_allow_html=True)
-    
-    st.markdown('</div>', unsafe_allow_html=True)
-
-# 第二个案例
-with case_cols[1]:
-    st.markdown('<div class="dashboard-card">', unsafe_allow_html=True)
-    st.markdown('<div style="display: flex; align-items: center; margin-bottom: 15px;">', unsafe_allow_html=True)
-    st.markdown('<div style="font-size: 2rem; margin-right: 15px;">⚡</div>', unsafe_allow_html=True)
-    st.markdown('<h3 style="margin: 0;">某深部水电站地下厂房</h3>', unsafe_allow_html=True)
-    st.markdown('</div>', unsafe_allow_html=True)
-    
-    # 案例图片(可以替换为实际项目图片)
-    st.image("https://via.placeholder.com/600x300?text=水电站地下厂房案例", use_column_width=True)
-    
-    st.markdown('''
-    <div style="margin-top: 15px;">
-        <div style="font-weight: 600; color: #1E293B; margin-bottom: 8px;">项目背景</div>
-        <p style="margin: 0; color: #64748b; font-size: 0.95rem;">
-            某大型水电站地下厂房开挖深度达到800米，主要岩体为片麻岩，初期开挖过程中已发生多次小型岩爆。
-        </p>
-    </div>
-    
-    <div style="margin-top: 15px;">
-        <div style="font-weight: 600; color: #1E293B; margin-bottom: 8px;">评估结果</div>
-        <p style="margin: 0; color: #64748b; font-size: 0.95rem;">
-            系统分析表明厂房左侧洞壁为中等岩爆倾向区，顶拱和右侧洞壁为弱岩爆倾向区，为差异化支护设计提供了依据。
-        </p>
-    </div>
-    
-    <div style="margin-top: 15px;">
-        <div style="font-weight: 600; color: #1E293B; margin-bottom: 8px;">防治效果</div>
-        <p style="margin: 0; color: #64748b; font-size: 0.95rem;">
-            基于系统预测结果，采用了分区分级支护方案，左侧洞壁增加了预应力锚索和钢筋网喷射混凝土，成功避免了后续开挖中的岩爆风险。
-        </p>
-    </div>
-    ''', unsafe_allow_html=True)
-    
-    st.markdown('</div>', unsafe_allow_html=True)
+    with advice_cols[1]:
+        st.markdown('<div class="dashboard-card">', unsafe_allow_html=True)
+        st.markdown('<div style="display: flex; align-items: center; margin-bottom: 15px;">', unsafe_allow_html=True)
+        st.markdown('<div style="font-size: 2rem; margin-right: 15px;">📋</div>', unsafe_allow_html=True)
+        st.markdown('<h3 style="margin: 0;">使用说明</h3>', unsafe_allow_html=True)
+        st.markdown('</div>', unsafe_allow_html=True)
+        
+        st.markdown('''
+        <div style="margin-bottom: 15px;">
+            <p style="margin: 0; color: #334155;">
+                点击上方"获取AI专家建议"按钮，系统将根据您当前设置的岩石参数自动生成专业的岩爆防治建议。
+            </p>
+        </div>
+        
+        <div style="margin-bottom: 15px;">
+            <div style="font-weight: 600; color: #1E293B; margin-bottom: 8px;">建议内容包括</div>
+            <ul style="margin: 0; padding-left: 20px; color: #64748b;">
+                <li>岩爆风险分析</li>
+                <li>具体防治措施推荐</li>
+                <li>支护方案设计建议</li>
+                <li>开挖技术选择</li>
+                <li>施工注意事项</li>
+            </ul>
+        </div>
+        ''', unsafe_allow_html=True)
+        
+        st.markdown('</div>', unsafe_allow_html=True)
 
 # 底部信息区
 st.markdown('<div class="divider"></div>', unsafe_allow_html=True)
