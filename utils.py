@@ -197,7 +197,9 @@ def predict_locally(input_data):
             'sigma_t': 'σt / MPa',
             'sigma_theta_c_ratio': 'σθ/σc',
             'sigma_c_t_ratio': 'σc/σt',
-            'wet': 'Wet'
+            'wet': 'Wet',
+            'depth': '埋深 / m',
+            'density': '密度 / g/cm³'
         }
         
         # 重命名列
@@ -347,7 +349,7 @@ def predict_locally(input_data):
         return result
 
 # 新增DeepSeek API功能
-def get_deepseek_advice(rock_type, prediction_text, sigma_theta, sigma_c, sigma_t, sigma_theta_c_ratio, sigma_c_t_ratio, wet):
+def get_deepseek_advice(rock_type, prediction_text, sigma_theta, sigma_c, sigma_t, sigma_theta_c_ratio, sigma_c_t_ratio, wet, depth=500, density=2.7):
     """
     根据岩爆预测结果调用DeepSeek API获取专业建议
     """
@@ -371,6 +373,8 @@ def get_deepseek_advice(rock_type, prediction_text, sigma_theta, sigma_c, sigma_
         - σθ/σc比值: {sigma_theta_c_ratio}
         - σc/σt比值: {sigma_c_t_ratio}
         - 含水率: {wet}
+        - 埋深: {depth} m
+        - 岩石密度: {density} g/cm³
         
         请从工程实践角度给出专业的防治建议，内容包括但不限于:
         1. 岩爆风险分析（分析该岩石参数下可能发生岩爆的类型和强度）
