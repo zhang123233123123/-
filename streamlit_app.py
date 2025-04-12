@@ -11,7 +11,7 @@ import os
 # 设置页面
 st.set_page_config(
     page_title="中南大学·智能岩爆风险评估系统",
-    page_icon="中南大学",
+    page_icon="🪨",
     layout="wide",
     initial_sidebar_state="expanded"
 )
@@ -395,7 +395,7 @@ st.markdown(f'''
 <div class="header-container">
     <img src="data:image/jpeg;base64,{logo_base64}" class="university-logo" alt="中南大学校徽" style="max-width: 70px; max-height: 70px; object-fit: contain;">
     <div>
-        <h1 style="margin: 0;">中南大学智能岩爆风险评估系统 🪨</h1>
+        <h1 style="margin: 0;">🪨 智能岩爆风险评估系统</h1>
         <div style="display: flex; align-items: center;">
             <p style="font-size: 1rem; color: #64748b; margin: 5px 0 0 0;">
                 基于先进的机器学习算法，为您提供精准的岩爆风险评估和防护建议
@@ -407,7 +407,7 @@ st.markdown(f'''
 ''', unsafe_allow_html=True)
 
 # 导入预测功能
-from utils import load_model, get_rock_burst_grade_text, predict_locally
+from utils import load_model, get_rock_burst_grade_text, predict_locally, create_parameter_impact_radar, create_grade_distribution_pie, create_correlation_heatmap
 
 # 创建自定义岩爆风险可视化函数
 def create_risk_gauge(risk_level, risk_text):
@@ -559,7 +559,7 @@ with st.sidebar:
     <div style="text-align: center; margin-bottom: 20px;">
         <img src="data:image/jpeg;base64,{logo_base64}" 
             style="height: 60px; width: 60px; object-fit: contain; margin-bottom: 10px; border-radius: 50%; border: 2px solid #1E40AF; padding: 3px; background-color: white;" alt="中南大学校徽">
-        <p style="color: #1E40AF; font-weight: 600; margin: 5px 0;">中南大学岩土安全与可持续研究实验室</p>
+        <p style="color: #1E40AF; font-weight: 600; margin: 5px 0;">中南大学可持续岩土实验室</p>
     </div>
     ''', unsafe_allow_html=True)
     
@@ -571,7 +571,7 @@ with st.sidebar:
     image = Image.open("WechatIMG250.jpg")
     # 调整图片大小，避免过大
     image_resized = image.resize((300, 300))
-    st.image(image_resized, use_column_width=True, caption="中南大学岩土安全与可持续研究实验室")
+    st.image(image_resized, use_column_width=True, caption="中南大学可持续岩土实验室")
     
     st.markdown('<div class="divider"></div>', unsafe_allow_html=True)
     
@@ -731,7 +731,7 @@ with col1:
                 
                 # 参数影响雷达图
                 st.markdown("<h3>参数影响雷达图</h3>", unsafe_allow_html=True)
-                impact_radar = create_parameter_impact_radar()
+                impact_radar = create_parameter_impact_radar(input_data)
                 st.plotly_chart(impact_radar, use_container_width=True)
                 
                 # 结果解释 - 更加详细
@@ -1224,53 +1224,8 @@ with insight_cols[1]:
     st.markdown('<div class="dashboard-card">', unsafe_allow_html=True)
     st.markdown('<h3>岩爆等级分布</h3>', unsafe_allow_html=True)
     
-    # 模拟数据 - 岩爆等级分布
-    grade_distribution = {
-        "无岩爆倾向": 45,
-        "弱岩爆倾向": 30,
-        "中等岩爆倾向": 18,
-        "强岩爆倾向": 7
-    }
-    
-    # 创建饼图
-    pie_data = pd.DataFrame({
-        "岩爆等级": list(grade_distribution.keys()),
-        "样本数量": list(grade_distribution.values())
-    })
-    
-    pie_fig = px.pie(
-        pie_data, 
-        names="岩爆等级", 
-        values="样本数量",
-        color="岩爆等级",
-        color_discrete_map={
-            "无岩爆倾向": "#10B981",
-            "弱岩爆倾向": "#F59E0B",
-            "中等岩爆倾向": "#EA580C",
-            "强岩爆倾向": "#DC2626"
-        }
-    )
-    
-    pie_fig.update_layout(
-        paper_bgcolor='rgba(0,0,0,0)',
-        plot_bgcolor='rgba(0,0,0,0)',
-        height=300,
-        margin=dict(l=20, r=20, t=20, b=30),
-        font=dict(family="Inter, sans-serif"),
-        legend=dict(
-            orientation="h",
-            yanchor="bottom",
-            y=-0.15,
-            xanchor="center",
-            x=0.5
-        )
-    )
-    
-    pie_fig.update_traces(
-        textinfo="percent+label",
-        hole=0.4,
-        marker=dict(line=dict(color='#ffffff', width=2))
-    )
+    # 使用动态函数生成岩爆等级分布饼图
+    pie_fig = create_grade_distribution_pie(input_data)
     
     st.plotly_chart(pie_fig, use_container_width=True)
     
@@ -1282,52 +1237,8 @@ with insight_cols[2]:
     st.markdown('<div class="dashboard-card">', unsafe_allow_html=True)
     st.markdown('<h3>参数相关性</h3>', unsafe_allow_html=True)
     
-    # 模拟数据 - 参数相关性
-    corr_data = np.array([
-        [1.00, 0.35, 0.42, 0.85, -0.28, 0.18],
-        [0.35, 1.00, 0.65, 0.25, 0.72, -0.15],
-        [0.42, 0.65, 1.00, 0.48, 0.56, 0.08],
-        [0.85, 0.25, 0.48, 1.00, -0.12, 0.22],
-        [-0.28, 0.72, 0.56, -0.12, 1.00, -0.05],
-        [0.18, -0.15, 0.08, 0.22, -0.05, 1.00]
-    ])
-    
-    parameter_names = ["围岩应力", "单轴抗压强度", "抗拉强度", "σθ/σc", "σc/σt", "含水率"]
-    
-    # 创建热图
-    heatmap_fig = px.imshow(
-        corr_data,
-        x=parameter_names,
-        y=parameter_names,
-        color_continuous_scale="RdBu_r",
-        zmin=-1,
-        zmax=1
-    )
-    
-    heatmap_fig.update_layout(
-        paper_bgcolor='rgba(0,0,0,0)',
-        plot_bgcolor='rgba(0,0,0,0)',
-        height=300,
-        margin=dict(l=0, r=0, t=20, b=0),
-        font=dict(family="Inter, sans-serif"),
-        coloraxis_colorbar=dict(
-            title="相关系数",
-            thicknessmode="pixels", 
-            thickness=15,
-            lenmode="pixels", 
-            len=250,
-            yanchor="top",
-            y=1,
-            ticks="outside"
-        )
-    )
-    
-    # 添加相关系数文本标注
-    heatmap_fig.update_traces(
-        text=np.around(corr_data, decimals=2),
-        texttemplate="%{text}",
-        textfont={"size": 10}
-    )
+    # 使用动态函数生成参数相关性热图
+    heatmap_fig = create_correlation_heatmap(input_data)
     
     st.plotly_chart(heatmap_fig, use_container_width=True)
     
@@ -1339,10 +1250,10 @@ st.markdown('<div class="footer-container">', unsafe_allow_html=True)
 st.markdown('''
 <div style="display: flex; justify-content: space-between; align-items: center; padding: 20px 0;">
     <div>
-        <p style="margin: 0; color: #64748b; font-size: 0.9rem;">© 2025 中南大学岩土安全与可持续研究实验室 | 版本 2.1.0</p>
+        <p style="margin: 0; color: #64748b; font-size: 0.9rem;">© 2023-2024 中南大学可持续岩土实验室 | 版本 2.1.0</p>
     </div>
     <div>
-        <p style="margin: 0; color: #64748b; font-size: 0.9rem;">技术支持: 中南大学岩土安全与可持续研究实验室</p>
+        <p style="margin: 0; color: #64748b; font-size: 0.9rem;">技术支持: 中南大学岩石力学与智能实验室</p>
     </div>
 </div>
 ''', unsafe_allow_html=True)
