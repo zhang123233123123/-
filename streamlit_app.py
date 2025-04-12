@@ -1339,10 +1339,10 @@ st.markdown('<div class="footer-container">', unsafe_allow_html=True)
 st.markdown('''
 <div style="display: flex; justify-content: space-between; align-items: center; padding: 20px 0;">
     <div>
-        <p style="margin: 0; color: #64748b; font-size: 0.9rem;">© 2023-2024 中南大学可持续岩土实验室 | 版本 2.1.0</p>
+        <p style="margin: 0; color: #64748b; font-size: 0.9rem;">© 2025 中南大学岩土安全与可持续研究实验室 | 版本 2.1.0</p>
     </div>
     <div>
-        <p style="margin: 0; color: #64748b; font-size: 0.9rem;">技术支持: 中南大学岩石力学与智能实验室</p>
+        <p style="margin: 0; color: #64748b; font-size: 0.9rem;">技术支持: 中南大学岩土安全与可持续研究实验室</p>
     </div>
 </div>
 ''', unsafe_allow_html=True)
