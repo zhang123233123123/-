@@ -9,3 +9,4 @@ lightgbm==4.0.0
 scipy==1.11.3
 category_encoders==2.6.1
 pillow==10.0.1
+openai==1.6.0
