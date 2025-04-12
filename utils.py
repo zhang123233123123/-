@@ -289,7 +289,8 @@ def predict_locally(input_data):
         for rock_grade in range(4):  # 0, 1, 2, 3
             for _ in range(25):  # 每个等级25个样本
                 # 随机生成参数，范围与输入控件范围一致
-                rock_type = np.random.choice([1.0, 2.0, 3.0, 4.0, 5.0])
+                rock_type = np.random.choice([1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0, 
+                                            11.0, 12.0, 13.0, 14.0, 15.0, 16.0, 17.0, 18.0, 19.0, 20.0, 21.0])
                 sigma_theta = np.random.uniform(10.0, 200.0)
                 sigma_c = np.random.uniform(20.0, 300.0)
                 sigma_t = np.random.uniform(1.0, 50.0)
