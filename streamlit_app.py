@@ -8,6 +8,9 @@ from PIL import Image
 import base64
 import os
 
+# 导入预测功能
+from utils import load_model, get_rock_burst_grade_text, predict_locally, create_grade_distribution_pie, create_correlation_heatmap
+
 # 初始化默认input_data
 input_data = {
     "rock_type": 1.0,  # 默认为花岗岩
@@ -417,9 +420,6 @@ st.markdown(f'''
 </div>
 ''', unsafe_allow_html=True)
 
-# 导入预测功能
-from utils import load_model, get_rock_burst_grade_text, predict_locally, create_parameter_impact_radar, create_grade_distribution_pie, create_correlation_heatmap
-
 # 创建自定义岩爆风险可视化函数
 def create_risk_gauge(risk_level, risk_text):
     colors = {
@@ -524,12 +524,49 @@ def create_probability_chart(probabilities):
     return fig
 
 # 创建参数影响雷达图
-def create_parameter_impact_radar():
-    # 假设的参数影响度(这可以根据实际模型重要性替换)
+def create_parameter_impact_radar(input_data=None):
+    import plotly.graph_objects as go
+    
+    # 定义参数分类
     categories = ['围岩应力', '单轴抗压强度', '抗拉强度', 
                  '围岩应力/单轴抗压强度比', '单轴抗压强度/抗拉强度比', '含水率']
     
-    values = [0.85, 0.78, 0.62, 0.91, 0.76, 0.58]
+    # 如果传入了输入数据，则根据实际值计算影响度
+    if input_data:
+        # 提取输入参数
+        sigma_theta = input_data.get('sigma_theta', 100)  # 围岩应力
+        sigma_c = input_data.get('sigma_c', 150)          # 单轴抗压强度
+        sigma_t = input_data.get('sigma_t', 20)           # 抗拉强度
+        sigma_theta_c_ratio = input_data.get('sigma_theta_c_ratio', 0.6)  # 围岩应力/单轴抗压强度比
+        sigma_c_t_ratio = input_data.get('sigma_c_t_ratio', 7.5)          # 单轴抗压强度/抗拉强度比
+        wet = input_data.get('wet', 0.5)                  # 含水率
+        
+        # 计算各参数影响度
+        # 围岩应力影响度：围岩应力越高，岩爆风险越大
+        stress_impact = min(0.3 + (sigma_theta / 200) * 0.7, 1.0)
+        
+        # 抗压强度影响度：抗压强度越低，岩爆风险越大
+        strength_impact = min(0.3 + ((300 - sigma_c) / 280) * 0.7, 1.0)
+        
+        # 抗拉强度影响度：抗拉强度越低，岩爆风险越大
+        tensile_impact = min(0.3 + ((50 - sigma_t) / 49) * 0.7, 1.0)
+        
+        # 应力/抗压比影响度：比值越大，岩爆风险越大
+        stress_ratio_impact = min(sigma_theta_c_ratio * 0.9, 1.0)
+        
+        # 抗压/抗拉比影响度：比值越大，岩爆风险越大
+        strength_ratio_impact = min((sigma_c_t_ratio / 15) * 0.8, 1.0)
+        
+        # 含水率影响度：含水率对岩爆的影响（支持0-100范围的值）
+        wet_normalized = min(wet / 100, 1.0)  # 归一化含水率，最大参考值为100
+        wet_impact = min(wet_normalized * 0.6, 0.6)
+        
+        # 合并所有影响度
+        values = [stress_impact, strength_impact, tensile_impact, 
+                 stress_ratio_impact, strength_ratio_impact, wet_impact]
+    else:
+        # 使用默认静态值
+        values = [0.85, 0.78, 0.62, 0.91, 0.76, 0.58]
     
     fig = go.Figure()
     
