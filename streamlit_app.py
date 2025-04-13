@@ -638,7 +638,7 @@ with st.sidebar:
             
             # 含水率
             st.markdown('<p class="param-label">含水率 (Wet)</p>', unsafe_allow_html=True)
-            wet = st.number_input("", min_value=0.0, max_value=1.0, value=0.5, step=0.01, key="wet_input")
+            wet = st.number_input("", min_value=0.0, max_value=10.0, value=0.5, step=0.1, key="wet_input")
         
         # 自动计算比率 - 放在表单下方
         sigma_theta_c_ratio = sigma_theta / sigma_c
