@@ -172,7 +172,7 @@ def create_parameter_impact_radar(input_data=None):
         strength_ratio_impact = min((sigma_c_t_ratio / 15) * 0.8, 1.0)
         
         # 含水率影响度：含水率对岩爆的影响（修改为支持大于1的值）
-        wet_normalized = min(wet / 10, 1.0)  # 归一化含水率，假设最大参考值为10
+        wet_normalized = min(wet / 100, 1.0)  # 归一化含水率，假设最大参考值为100
         wet_impact = min(wet_normalized * 0.6, 0.6)
         
         # 合并所有影响度
@@ -331,7 +331,7 @@ def predict_locally(input_data):
                 sigma_t = np.random.uniform(1.0, 50.0)
                 sigma_theta_c_ratio = sigma_theta / sigma_c
                 sigma_c_t_ratio = sigma_c / sigma_t
-                wet = np.random.uniform(0.0, 10.0)  # 调整含水率范围，允许大于1的值
+                wet = np.random.uniform(0.0, 100.0)  # 调整含水率范围，允许0-100的值
                 
                 # 为不同岩爆等级设置不同的典型参数范围
                 if rock_grade == 0:  # 无岩爆倾向
@@ -395,7 +395,7 @@ def create_grade_distribution_pie(input_data=None):
         wet = input_data.get('wet', 0.5)                  # 含水率
         
         # 归一化含水率用于计算（允许大于1的值）
-        wet_norm = min(wet / 10, 1.0)  # 假设最大参考值为10
+        wet_norm = min(wet / 100, 1.0)  # 假设最大参考值为100
         
         # 计算基于输入参数的各岩爆等级分布
         # 围岩应力高，抗压强度低，比值大，岩爆风险更高
@@ -495,7 +495,7 @@ def create_correlation_heatmap(input_data=None):
         # 这里我们将调整相关系数，使其能够反映实际的物理关系
         
         # 归一化含水率用于计算相关性（允许大于1的值）
-        wet_norm = min(wet / 10, 1.0)  # 假设最大参考值为10
+        wet_norm = min(wet / 100, 1.0)  # 假设最大参考值为100
         
         # 围岩应力与其他参数的相关性
         r_s_sc = -0.2 - (sigma_theta / 1000)         # 围岩应力与抗压强度：轻微负相关，高应力区域可能对应低强度
