@@ -171,8 +171,9 @@ def create_parameter_impact_radar(input_data=None):
         # 抗压/抗拉比影响度：比值越大，岩爆风险越大
         strength_ratio_impact = min((sigma_c_t_ratio / 15) * 0.8, 1.0)
         
-        # 含水率影响度：含水率对岩爆的影响
-        wet_impact = min(wet * 0.6, 0.6)
+        # 含水率影响度：含水率对岩爆的影响（修改为支持大于1的值）
+        wet_normalized = min(wet / 10, 1.0)  # 归一化含水率，假设最大参考值为10
+        wet_impact = min(wet_normalized * 0.6, 0.6)
         
         # 合并所有影响度
         values = [stress_impact, strength_impact, tensile_impact, 
@@ -261,7 +262,7 @@ def predict_locally(input_data):
             sigma_t = input_df['σt / MPa'].values[0]
             sigma_theta_c_ratio = input_df['σθ/σc'].values[0]
             sigma_c_t_ratio = input_df['σc/σt'].values[0]
-            wet = input_df['Wet'].values[0]
+            wet = input_df['Wet'].values[0]  # 含水率不作特殊处理
             
             # 为每个可能的交叉特征准备名称和值的映射
             feature_values = {}
@@ -330,7 +331,7 @@ def predict_locally(input_data):
                 sigma_t = np.random.uniform(1.0, 50.0)
                 sigma_theta_c_ratio = sigma_theta / sigma_c
                 sigma_c_t_ratio = sigma_c / sigma_t
-                wet = np.random.uniform(0.0, 1.0)
+                wet = np.random.uniform(0.0, 10.0)  # 调整含水率范围，允许大于1的值
                 
                 # 为不同岩爆等级设置不同的典型参数范围
                 if rock_grade == 0:  # 无岩爆倾向
@@ -391,6 +392,10 @@ def create_grade_distribution_pie(input_data=None):
         sigma_theta = input_data.get('sigma_theta', 100)  # 围岩应力
         sigma_c = input_data.get('sigma_c', 150)          # 单轴抗压强度
         sigma_theta_c_ratio = input_data.get('sigma_theta_c_ratio', 0.6)  # 围岩应力/单轴抗压强度比
+        wet = input_data.get('wet', 0.5)                  # 含水率
+        
+        # 归一化含水率用于计算（允许大于1的值）
+        wet_norm = min(wet / 10, 1.0)  # 假设最大参考值为10
         
         # 计算基于输入参数的各岩爆等级分布
         # 围岩应力高，抗压强度低，比值大，岩爆风险更高
@@ -404,8 +409,8 @@ def create_grade_distribution_pie(input_data=None):
         # 中等岩爆倾向比例
         medium_burst = max(0, min(40, 10 + (sigma_theta / 8) - (sigma_c / 20) + (sigma_theta_c_ratio * 10)))
         
-        # 强岩爆倾向比例
-        strong_burst = max(0, min(30, (sigma_theta / 10) - (sigma_c / 30) + (sigma_theta_c_ratio * 20)))
+        # 强岩爆倾向比例 - 包含含水率的影响
+        strong_burst = max(0, min(30, (sigma_theta / 10) - (sigma_c / 30) + (sigma_theta_c_ratio * 20) + (wet_norm * 5)))
         
         # 保证总和为100
         total = no_burst + weak_burst + medium_burst + strong_burst
@@ -489,30 +494,33 @@ def create_correlation_heatmap(input_data=None):
         # 基于输入参数生成相关性矩阵
         # 这里我们将调整相关系数，使其能够反映实际的物理关系
         
+        # 归一化含水率用于计算相关性（允许大于1的值）
+        wet_norm = min(wet / 10, 1.0)  # 假设最大参考值为10
+        
         # 围岩应力与其他参数的相关性
         r_s_sc = -0.2 - (sigma_theta / 1000)         # 围岩应力与抗压强度：轻微负相关，高应力区域可能对应低强度
         r_s_st = -0.15 - (sigma_theta / 1000)        # 围岩应力与抗拉强度：轻微负相关
         r_s_sc_ratio = 0.8 + (sigma_theta_c_ratio / 10)  # 围岩应力与应力比：强正相关，应力越高，比值越大
-        r_s_sct_ratio = -0.3 + wet                    # 围岩应力与强度比：中等负相关
-        r_s_wet = 0.1 + wet / 2                       # 围岩应力与含水率：弱正相关
+        r_s_sct_ratio = -0.3 + wet_norm                 # 围岩应力与强度比：中等负相关
+        r_s_wet = 0.1 + wet_norm / 2                    # 围岩应力与含水率：弱正相关
         
         # 抗压强度与其他参数的相关性
         r_sc_st = 0.6 + (sigma_t / 100)               # 抗压强度与抗拉强度：强正相关
         r_sc_sc_ratio = -0.2 - sigma_theta_c_ratio     # 抗压强度与应力比：负相关
         r_sc_sct_ratio = 0.7 + (sigma_c_t_ratio / 20)  # 抗压强度与强度比：强正相关
-        r_sc_wet = -0.1 - wet / 2                      # 抗压强度与含水率：弱负相关
+        r_sc_wet = -0.1 - wet_norm / 2                 # 抗压强度与含水率：弱负相关
         
         # 抗拉强度与其他参数的相关性
         r_st_sc_ratio = -0.1 - sigma_theta_c_ratio / 2  # 抗拉强度与应力比：弱负相关
         r_st_sct_ratio = 0.5 + (sigma_c_t_ratio / 30)   # 抗拉强度与强度比：中等正相关
-        r_st_wet = 0.1 - wet                            # 抗拉强度与含水率：弱正相关，但受含水率影响
+        r_st_wet = 0.1 - wet_norm                       # 抗拉强度与含水率：弱正相关，但受含水率影响
         
         # 应力比与其他参数的相关性  
         r_sc_ratio_sct_ratio = -0.1 - sigma_theta_c_ratio / 10  # 应力比与强度比：弱负相关
-        r_sc_ratio_wet = 0.2 + wet / 5                          # 应力比与含水率：弱正相关
+        r_sc_ratio_wet = 0.2 + wet_norm / 5                     # 应力比与含水率：弱正相关
         
         # 强度比与含水率的相关性
-        r_sct_ratio_wet = -0.05 - wet / 10                      # 强度比与含水率：很弱负相关
+        r_sct_ratio_wet = -0.05 - wet_norm / 10                 # 强度比与含水率：很弱负相关
         
         # 截断相关系数在 -1 到 1 之间
         corr_data = np.array([
